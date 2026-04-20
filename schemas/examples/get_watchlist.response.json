@@ -1,0 +1,21 @@
+{
+  "date": "2026-04-20",
+  "generated_at": "2026-04-20T08:15:00Z",
+  "symbols": [
+    {
+      "symbol": "NVDA",
+      "rank": 1,
+      "features": { "momentum_5d": 0.041, "rel_volume": 1.62, "atr_pct": 0.028 }
+    },
+    {
+      "symbol": "AAPL",
+      "rank": 2,
+      "features": { "momentum_5d": 0.019, "rel_volume": 1.08, "atr_pct": 0.014 }
+    },
+    {
+      "symbol": "MSFT",
+      "rank": 3,
+      "features": { "momentum_5d": 0.012, "rel_volume": 0.95, "atr_pct": 0.012 }
+    }
+  ]
+}

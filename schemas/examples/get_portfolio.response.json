@@ -1,0 +1,22 @@
+{
+  "as_of": "2026-04-20T14:32:00Z",
+  "cash": 67234.12,
+  "equity": 102488.55,
+  "buying_power": 67234.12,
+  "positions": [
+    {
+      "symbol": "NVDA",
+      "qty": 25,
+      "avg_entry_price": 890.00,
+      "market_value": 22625.00,
+      "unrealized_pl": 375.00
+    },
+    {
+      "symbol": "AAPL",
+      "qty": 60,
+      "avg_entry_price": 201.10,
+      "market_value": 12629.43,
+      "unrealized_pl": 563.43
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexusquant.local/schemas/get_risk_budget.json",
+  "title": "get_risk_budget",
+  "description": "Remaining auto-mode order budget and drawdown state.",
+  "request": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  },
+  "response": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["as_of", "hour", "day", "drawdown_pct", "auto_mode_enabled"],
+    "properties": {
+      "as_of": { "type": "string", "format": "date-time" },
+      "hour": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["orders_remaining", "window_resets_at"],
+        "properties": {
+          "orders_remaining": { "type": "integer", "minimum": 0 },
+          "window_resets_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "day": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["orders_remaining", "notional_remaining", "window_resets_at"],
+        "properties": {
+          "orders_remaining": { "type": "integer", "minimum": 0 },
+          "notional_remaining": { "type": "number", "minimum": 0 },
+          "window_resets_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "drawdown_pct": { "type": "number" },
+      "auto_mode_enabled": { "type": "boolean" },
+      "circuit_breaker_tripped": { "type": "boolean" }
+    }
+  }
+}

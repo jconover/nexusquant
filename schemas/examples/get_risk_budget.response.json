@@ -1,0 +1,15 @@
+{
+  "as_of": "2026-04-20T14:32:00Z",
+  "hour": {
+    "orders_remaining": 2,
+    "window_resets_at": "2026-04-20T15:00:00Z"
+  },
+  "day": {
+    "orders_remaining": 7,
+    "notional_remaining": 12500.00,
+    "window_resets_at": "2026-04-21T04:00:00Z"
+  },
+  "drawdown_pct": -0.4,
+  "auto_mode_enabled": true,
+  "circuit_breaker_tripped": false
+}

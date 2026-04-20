@@ -1,0 +1,9 @@
+{
+  "symbol": "NVDA",
+  "side": "buy",
+  "qty": 5,
+  "order_type": "limit",
+  "limit_price": 905.50,
+  "time_in_force": "day",
+  "idempotency_key": "ord-20260420-nvda-buy-5-90550"
+}

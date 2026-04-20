@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexusquant.local/schemas/get_signal.json",
+  "title": "get_signal",
+  "description": "Rolling indicators and rule verdict for a watchlist symbol.",
+  "request": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["symbol"],
+    "properties": {
+      "symbol": { "type": "string", "pattern": "^[A-Z.]{1,10}$" }
+    }
+  },
+  "response": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["symbol", "ts", "indicators", "rule_result"],
+    "properties": {
+      "symbol": { "type": "string", "pattern": "^[A-Z.]{1,10}$" },
+      "ts": { "type": "string", "format": "date-time" },
+      "indicators": {
+        "type": "object",
+        "additionalProperties": { "type": "number" }
+      },
+      "rule_result": { "enum": ["buy", "sell", "hold"] }
+    }
+  }
+}

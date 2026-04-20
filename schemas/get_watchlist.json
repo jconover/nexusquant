@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexusquant.local/schemas/get_watchlist.json",
+  "title": "get_watchlist",
+  "description": "Today's candidate symbols with the features that ranked them.",
+  "request": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "date": {
+        "type": "string",
+        "format": "date",
+        "description": "ISO date. Defaults to current trading day when omitted."
+      }
+    }
+  },
+  "response": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["date", "symbols"],
+    "properties": {
+      "date": { "type": "string", "format": "date" },
+      "generated_at": { "type": "string", "format": "date-time" },
+      "symbols": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["symbol", "rank", "features"],
+          "properties": {
+            "symbol": { "type": "string", "pattern": "^[A-Z.]{1,10}$" },
+            "rank": { "type": "integer", "minimum": 1 },
+            "features": {
+              "type": "object",
+              "additionalProperties": { "type": "number" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

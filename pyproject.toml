@@ -3,6 +3,18 @@
 # for dependencies, but inherit ruff/mypy settings from this file when tools are
 # invoked from the repo root (which is what CI does).
 
+[project]
+name = "nexusquant"
+version = "0.0.0"
+description = "NexusQuant monorepo tooling root. Runtime code lives under services/."
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "jsonschema[format-nongpl]>=4.20",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"

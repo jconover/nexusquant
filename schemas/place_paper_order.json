@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexusquant.local/schemas/place_paper_order.json",
+  "title": "place_paper_order",
+  "description": "Submit a paper order. The risk service decides one of three outcomes: executed, pending_approval, or rejected.",
+  "request": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["symbol", "side", "qty", "order_type", "time_in_force", "idempotency_key"],
+    "properties": {
+      "symbol": { "type": "string", "pattern": "^[A-Z.]{1,10}$" },
+      "side": { "enum": ["buy", "sell"] },
+      "qty": { "type": "number", "exclusiveMinimum": 0 },
+      "order_type": { "enum": ["market", "limit"] },
+      "limit_price": { "type": "number", "exclusiveMinimum": 0 },
+      "time_in_force": { "enum": ["day", "gtc", "ioc"] },
+      "idempotency_key": { "type": "string", "minLength": 1, "maxLength": 128 }
+    },
+    "allOf": [
+      {
+        "if": {
+          "required": ["order_type"],
+          "properties": { "order_type": { "const": "limit" } }
+        },
+        "then": { "required": ["limit_price"] }
+      }
+    ]
+  },
+  "response": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "oneOf": [
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status", "order_id", "fill"],
+        "properties": {
+          "status": { "const": "executed" },
+          "order_id": { "type": "string", "minLength": 1 },
+          "fill": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["price", "qty", "ts"],
+            "properties": {
+              "price": { "type": "number", "exclusiveMinimum": 0 },
+              "qty": { "type": "number", "exclusiveMinimum": 0 },
+              "ts": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status", "proposal_id", "expires_at"],
+        "properties": {
+          "status": { "const": "pending_approval" },
+          "proposal_id": { "type": "string", "minLength": 1 },
+          "expires_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status", "reason"],
+        "properties": {
+          "status": { "const": "rejected" },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    ]
+  }
+}

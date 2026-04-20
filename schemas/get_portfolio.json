@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexusquant.local/schemas/get_portfolio.json",
+  "title": "get_portfolio",
+  "description": "Current paper-trading portfolio: cash, equity, and open positions.",
+  "request": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  },
+  "response": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["as_of", "cash", "equity", "positions"],
+    "properties": {
+      "as_of": { "type": "string", "format": "date-time" },
+      "cash": { "type": "number" },
+      "equity": { "type": "number" },
+      "buying_power": { "type": "number" },
+      "positions": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["symbol", "qty", "avg_entry_price", "market_value"],
+          "properties": {
+            "symbol": { "type": "string", "pattern": "^[A-Z.]{1,10}$" },
+            "qty": { "type": "number" },
+            "avg_entry_price": { "type": "number", "minimum": 0 },
+            "market_value": { "type": "number" },
+            "unrealized_pl": { "type": "number" }
+          }
+        }
+      }
+    }
+  }
+}

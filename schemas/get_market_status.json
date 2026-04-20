@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexusquant.local/schemas/get_market_status.json",
+  "title": "get_market_status",
+  "description": "Current US equity market session status.",
+  "request": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  },
+  "response": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["session", "timestamp"],
+    "properties": {
+      "session": { "enum": ["closed", "pre", "open", "post"] },
+      "timestamp": { "type": "string", "format": "date-time" },
+      "next_transition": { "type": "string", "format": "date-time" }
+    }
+  }
+}
