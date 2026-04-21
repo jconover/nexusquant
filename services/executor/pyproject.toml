@@ -1,0 +1,18 @@
+[project]
+name = "nexusquant-executor"
+version = "0.0.0"
+description = "Executor service (stub): Alpaca paper-trading order submitter."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nexusquant_executor"]

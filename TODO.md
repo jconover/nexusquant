@@ -11,6 +11,9 @@ if it isn't in `docs/PHASE_0.md`, it goes here under the phase that owns it.
 ## Phase 2
 
 - Authentication on service-to-service calls.
+- Real `/readyz` checks: Postgres and Redis pings for the services that
+  depend on them (signal, risk, executor, watchlist, ingester). Phase 0
+  stubs return `{"status": "ok"}` unconditionally.
 
 ## Phase 3
 

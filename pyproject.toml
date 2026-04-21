@@ -13,7 +13,31 @@ requires-python = ">=3.12"
 dev = [
     "pytest>=8.0",
     "jsonschema[format-nongpl]>=4.20",
+    "httpx>=0.27",
+    "nexusquant-signal",
+    "nexusquant-risk",
+    "nexusquant-executor",
+    "nexusquant-watchlist",
+    "nexusquant-ingester",
+    "nexusquant-mcp",
+    "nexusquant-slack",
 ]
+
+[tool.uv.workspace]
+members = ["services/*"]
+
+[tool.uv.sources]
+nexusquant-signal = { workspace = true }
+nexusquant-risk = { workspace = true }
+nexusquant-executor = { workspace = true }
+nexusquant-watchlist = { workspace = true }
+nexusquant-ingester = { workspace = true }
+nexusquant-mcp = { workspace = true }
+nexusquant-slack = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "services"]
+addopts = "--import-mode=importlib"
 
 [tool.ruff]
 line-length = 100
