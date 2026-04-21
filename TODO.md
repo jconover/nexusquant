@@ -5,6 +5,9 @@ if it isn't in `docs/PHASE_0.md`, it goes here under the phase that owns it.
 
 ## Phase 1
 
+- Add foreign keys from `decisions.proposal_id` and `orders.proposal_id` to
+  `proposals.proposal_id` once service write paths are wired.
+
 ## Phase 2
 
 - Authentication on service-to-service calls.
