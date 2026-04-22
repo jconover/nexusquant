@@ -43,8 +43,11 @@ docker compose down -v
 ```
 
 Service port map: signal 8001, risk 8002, executor 8003, watchlist 8004,
-ingester 8005, mcp 8006, slack 8007. Postgres 5432, Redis 6379, MinIO 9000
-(console 9001).
+ingester 8005, mcp 8006, slack 8007. Postgres host-side 5433 (canonical
+5432 inside the container), Redis host-side 6380 (canonical 6379 inside),
+MinIO 9000 (console 9001). Host-side ports are moved off canonical so the
+stack coexists with other local docker projects that already bind 5432
+and 6379.
 
 ---
 
