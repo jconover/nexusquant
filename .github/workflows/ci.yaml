@@ -1,0 +1,59 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  service:
+    name: service (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [signal, risk, executor, watchlist, ingester, mcp, slack]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+
+      - name: Sync workspace
+        run: uv sync --all-packages
+
+      - name: Ruff lint
+        run: uv run --with ruff ruff check services/${{ matrix.service }}
+
+      - name: Ruff format check
+        run: uv run --with ruff ruff format --check services/${{ matrix.service }}
+
+      - name: Mypy
+        run: uv run --with mypy mypy services/${{ matrix.service }}/src
+
+      - name: Pytest
+        run: uv run pytest services/${{ matrix.service }}/tests -q
+
+      - name: Docker build
+        run: docker build services/${{ matrix.service }}
+
+  schemas:
+    name: schemas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+
+      - name: Sync workspace
+        run: uv sync --all-packages
+
+      - name: Validate JSON schema examples
+        run: uv run pytest tests/unit/test_schemas.py -q
