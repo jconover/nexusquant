@@ -19,6 +19,9 @@ if it isn't in `docs/PHASE_0.md`, it goes here under the phase that owns it.
 - Real `/readyz` checks: Postgres and Redis pings for the services that
   depend on them (signal, risk, executor, watchlist, ingester). Phase 0
   stubs return `{"status": "ok"}` unconditionally.
+- Promote `nexusquant_signal.alpaca_clients`, `.alpaca_logger`, and
+  `.rate_limiter` to a shared library when the executor service needs
+  them. Phase 1 lands them per-service to avoid premature abstraction.
 
 ## Phase 3
 
