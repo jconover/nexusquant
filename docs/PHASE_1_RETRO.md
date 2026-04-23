@@ -61,3 +61,11 @@ Three bullets per the definition-of-done in `docs/PHASE_1.md`.
   prod leaves sealed-secrets to reconcile) works well and will
   repeat across every service's chart. Worth capturing so the next
   chart doesn't reinvent.
+- **`alpaca-paper/SKILL.md` — feed is mandatory, not optional.**
+  Every `StockBarsRequest` must pass `feed=DataFeed.IEX` explicitly.
+  The SDK default is SIP, which the free-tier paper account rejects
+  with `{"message":"subscription does not permit querying recent SIP
+  data"}`. Unit tests with stubbed BarSets don't catch this because
+  the stub reads back whatever the request says -- it only surfaces
+  on a real roundtrip. Suggest adding a hard-requirement line in the
+  skill's "Common patterns" or "Anti-patterns to refuse" section.
