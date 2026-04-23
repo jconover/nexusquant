@@ -19,6 +19,7 @@ import time
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
+from alpaca.data.enums import DataFeed
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
@@ -138,6 +139,7 @@ async def fetch_daily_bars(
         timeframe=TimeFrame.Day,
         start=start,
         end=end,
+        feed=DataFeed.IEX,  # free-tier plan; SIP requires paid subscription
     )
     bar_set = await _call_with_instrumentation(client, req, symbol, limiter, logger)
     return _extract(bar_set, symbol)
@@ -159,6 +161,7 @@ async def fetch_intraday_bars(
         timeframe=TimeFrame.Minute,
         start=start,
         end=end,
+        feed=DataFeed.IEX,  # free-tier plan; SIP requires paid subscription
     )
     bar_set = await _call_with_instrumentation(client, req, symbol, limiter, logger)
     return _extract(bar_set, symbol)
