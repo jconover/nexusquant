@@ -1,0 +1,16 @@
+# Overrides for the NexusLab OKD cluster.
+#
+# This cluster has the Prometheus Operator CRDs (from openshift-user-workload-
+# monitoring) and kube-prometheus-stack's ServiceMonitor selector is not
+# label-scoped, so no selector label is required here.
+#
+# Secrets are populated out-of-band (sealed-secrets); createSecret stays false.
+
+serviceMonitor:
+  enabled: true
+  # OpenShift user-workload-monitoring scrapes ServiceMonitors in any user
+  # namespace without a selector label; leave labels empty.
+  labels: {}
+
+image:
+  pullPolicy: Always  # tags are :sha-<short>, so "Always" is cheap and correct.
