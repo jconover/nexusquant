@@ -16,15 +16,44 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "additionalProperties": false,
-    "required": ["symbol", "ts", "indicators", "rule_result"],
+    "required": [
+      "symbol",
+      "as_of",
+      "indicators",
+      "signal",
+      "rules_passed",
+      "data_source",
+      "cache_hit"
+    ],
     "properties": {
       "symbol": { "type": "string", "pattern": "^[A-Z.]{1,10}$" },
-      "ts": { "type": "string", "format": "date-time" },
+      "as_of": { "type": "string", "format": "date-time" },
       "indicators": {
         "type": "object",
-        "additionalProperties": { "type": "number" }
+        "additionalProperties": false,
+        "required": [
+          "sma_20",
+          "sma_50",
+          "rsi_14",
+          "vwap",
+          "avg_volume_20",
+          "last_close",
+          "last_volume"
+        ],
+        "properties": {
+          "sma_20": { "type": "number" },
+          "sma_50": { "type": "number" },
+          "rsi_14": { "type": "number", "minimum": 0, "maximum": 100 },
+          "vwap": { "type": "number" },
+          "avg_volume_20": { "type": "number", "minimum": 0 },
+          "last_close": { "type": "number" },
+          "last_volume": { "type": "number", "minimum": 0 }
+        }
       },
-      "rule_result": { "enum": ["buy", "sell", "hold"] }
+      "signal": { "enum": ["BUY", "SELL", "HOLD"] },
+      "rules_passed": { "type": "integer", "minimum": 0 },
+      "data_source": { "enum": ["alpaca_rest"] },
+      "cache_hit": { "type": "boolean" }
     }
   }
 }
