@@ -1,11 +1,17 @@
 {
   "symbol": "NVDA",
-  "ts": "2026-04-20T14:31:00Z",
+  "as_of": "2026-04-22T20:00:00Z",
   "indicators": {
-    "ema_9": 905.12,
-    "ema_21": 892.40,
+    "sma_20": 898.50,
+    "sma_50": 880.12,
     "rsi_14": 62.3,
-    "atr_14": 25.8
+    "vwap": 908.75,
+    "avg_volume_20": 44000000,
+    "last_close": 905.12,
+    "last_volume": 47500000
   },
-  "rule_result": "buy"
+  "signal": "BUY",
+  "rules_passed": 3,
+  "data_source": "alpaca_rest",
+  "cache_hit": false
 }

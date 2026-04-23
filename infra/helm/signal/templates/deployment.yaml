@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "signal.fullname" . }}
+  labels:
+    {{- include "signal.labels" . | nindent 4 }}
+spec:
+  # Phase 1: replicas=1 is load-bearing. Scaling out requires moving the
+  # TTL bars cache from in-process to Redis, else each replica keeps its
+  # own divergent cache and hammers Alpaca.
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "signal.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "signal.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: signal
+          image: {{ include "signal.imageRef" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8001
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "signal.fullname" . }}
+            - secretRef:
+                name: {{ include "signal.alpacaSecretName" . }}
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "signal.postgresSecretName" . }}
+                  key: POSTGRES_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

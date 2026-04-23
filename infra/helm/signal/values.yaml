@@ -1,0 +1,79 @@
+# Default values for the NexusQuant signal chart.
+# Override via -f or --set.
+
+image:
+  repository: ghcr.io/jconover/nexusquant-signal
+  # Defaults to .Chart.AppVersion when empty.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# replicas=1 is the only supported value in Phase 1.
+# Scaling out requires moving the TTL bars cache from in-process to Redis,
+# otherwise each replica duplicates Alpaca requests and maintains divergent
+# cache state. See services/signal/src/nexusquant_signal/cache.py.
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 8001
+
+# ServiceMonitor (Prometheus Operator CRD) is gated behind this flag so the
+# chart lints cleanly on clusters that don't have the CRDs installed.
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s
+  path: /metrics
+  # Label required by your Prometheus instance's serviceMonitorSelector.
+  # On OKD user-workload-monitoring this is usually empty; on kube-prometheus-
+  # stack it is commonly "release: kube-prometheus-stack".
+  labels: {}
+
+alpaca:
+  baseUrl: https://paper-api.alpaca.markets
+  dataFeed: iex
+  # paper flag is fixed true at the application layer (skill rule).
+  #
+  # In dev, set createSecret=true and supply apiKeyId/apiSecretKey via
+  # --set-file or a tfvars-style override. In prod, leave createSecret=false
+  # and let sealed-secrets (or whatever) reconcile a Secret named after
+  # `{{ include "signal.fullname" . }}-alpaca` with the same keys.
+  createSecret: false
+  apiKeyId: ""
+  apiSecretKey: ""
+
+postgres:
+  host: postgres.nexusquant.svc.cluster.local
+  port: 5432
+  database: nexusquant
+  user: nexusquant
+  # Same pattern as Alpaca: create in dev via values, or let sealed-secrets
+  # populate the secret named `{{ include "signal.fullname" . }}-postgres`
+  # with key POSTGRES_PASSWORD.
+  createSecret: false
+  password: ""
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
