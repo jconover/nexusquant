@@ -23,6 +23,7 @@ from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
 
+from nexusquant_signal import metrics
 from nexusquant_signal.alpaca_logger import AlpacaLogEvent, log_alpaca_event
 from nexusquant_signal.market_hours import ET
 from nexusquant_signal.rate_limiter import SlidingWindowRateLimiter
@@ -81,6 +82,15 @@ async def _call_with_instrumentation(
     try:
         bar_set = await asyncio.to_thread(client.get_stock_bars, req)
     except Exception as e:
+        elapsed = time.monotonic() - t0
+        status = getattr(e, "status_code", None)
+        if status == 429:
+            metrics.rate_limit_hit_total.inc()
+        metrics.alpaca_request_total.labels(
+            endpoint=_ENDPOINT,
+            status_code=str(status) if status is not None else "error",
+        ).inc()
+        metrics.alpaca_request_latency_seconds.labels(endpoint=_ENDPOINT).observe(elapsed)
         log_alpaca_event(
             logger,
             AlpacaLogEvent(
@@ -89,11 +99,14 @@ async def _call_with_instrumentation(
                 endpoint=_ENDPOINT,
                 method=_METHOD,
                 symbol=symbol,
-                latency_ms=(time.monotonic() - t0) * 1000,
+                latency_ms=elapsed * 1000,
                 error_code=type(e).__name__,
             ),
         )
         raise AlpacaError(str(e)) from e
+    elapsed = time.monotonic() - t0
+    metrics.alpaca_request_total.labels(endpoint=_ENDPOINT, status_code="200").inc()
+    metrics.alpaca_request_latency_seconds.labels(endpoint=_ENDPOINT).observe(elapsed)
     log_alpaca_event(
         logger,
         AlpacaLogEvent(
@@ -103,7 +116,7 @@ async def _call_with_instrumentation(
             method=_METHOD,
             symbol=symbol,
             status_code=200,
-            latency_ms=(time.monotonic() - t0) * 1000,
+            latency_ms=elapsed * 1000,
         ),
     )
     return bar_set

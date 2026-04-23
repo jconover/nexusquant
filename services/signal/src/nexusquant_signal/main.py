@@ -15,8 +15,9 @@ from typing import Annotated, Any
 
 from alpaca.data.historical import StockHistoricalDataClient
 from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.responses import Response
 
-from nexusquant_signal import alpaca_service
+from nexusquant_signal import alpaca_service, metrics
 from nexusquant_signal.alpaca_clients import historical_data_client
 from nexusquant_signal.alpaca_logger import get_alpaca_logger
 from nexusquant_signal.cache import BarsCache, BarsCacheKey, ttl_for
@@ -82,6 +83,11 @@ def readyz() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/metrics")
+def prometheus_metrics() -> Response:
+    return Response(content=metrics.metrics_body(), media_type=metrics.METRICS_CONTENT_TYPE)
+
+
 async def _cached_fetch(
     cache: BarsCache,
     symbol: str,
@@ -107,7 +113,9 @@ async def _cached_fetch(
         )
     cached = cache.get(key)
     if cached is not None:
+        metrics.cache_hit_total.labels(kind=timeframe).inc()
         return cached, True
+    metrics.cache_miss_total.labels(kind=timeframe).inc()
     if timeframe == "daily":
         bars = await alpaca_service.fetch_daily_bars(client, symbol, limiter, logger)
     else:
@@ -130,50 +138,53 @@ async def get_signal(
             detail={"error": "symbol_not_in_phase_1_universe", "symbol": symbol},
         )
 
-    try:
-        daily_bars, daily_hit = await _cached_fetch(
-            cache, symbol, "daily", client, limiter, alpaca_log
-        )
-        minute_bars, minute_hit = await _cached_fetch(
-            cache, symbol, "minute", client, limiter, alpaca_log
-        )
-    except alpaca_service.AlpacaError as e:
-        raise HTTPException(
-            status_code=502,
-            detail={"error": "alpaca_upstream_error", "message": str(e)},
-        ) from e
+    with metrics.signal_computation_latency_seconds.time():
+        try:
+            daily_bars, daily_hit = await _cached_fetch(
+                cache, symbol, "daily", client, limiter, alpaca_log
+            )
+            minute_bars, minute_hit = await _cached_fetch(
+                cache, symbol, "minute", client, limiter, alpaca_log
+            )
+        except alpaca_service.AlpacaError as e:
+            raise HTTPException(
+                status_code=502,
+                detail={"error": "alpaca_upstream_error", "message": str(e)},
+            ) from e
 
-    try:
-        indicators_map = {
-            "sma_20": sma(daily_bars, 20),
-            "sma_50": sma(daily_bars, 50),
-            "rsi_14": rsi_wilder(daily_bars, period=14),
-            "vwap": vwap(minute_bars),
-            "avg_volume_20": avg_volume(daily_bars, 20),
-            "last_close": last_close(daily_bars),
-            "last_volume": last_volume(daily_bars),
+        try:
+            indicators_map = {
+                "sma_20": sma(daily_bars, 20),
+                "sma_50": sma(daily_bars, 50),
+                "rsi_14": rsi_wilder(daily_bars, period=14),
+                "vwap": vwap(minute_bars),
+                "avg_volume_20": avg_volume(daily_bars, 20),
+                "last_close": last_close(daily_bars),
+                "last_volume": last_volume(daily_bars),
+            }
+        except ValueError as e:
+            raise HTTPException(
+                status_code=422,
+                detail={"error": "insufficient_data", "message": str(e)},
+            ) from e
+
+        verdict = evaluate(
+            last_close=indicators_map["last_close"],
+            sma_20=indicators_map["sma_20"],
+            sma_50=indicators_map["sma_50"],
+            rsi_14=indicators_map["rsi_14"],
+            last_volume=indicators_map["last_volume"],
+            avg_volume_20=indicators_map["avg_volume_20"],
+        )
+
+        metrics.signals_computed_total.labels(symbol=symbol, signal=verdict.signal.value).inc()
+
+        return {
+            "symbol": symbol,
+            "as_of": datetime.now(tz=UTC).isoformat().replace("+00:00", "Z"),
+            "indicators": indicators_map,
+            "signal": verdict.signal.value,
+            "rules_passed": verdict.rules_passed,
+            "data_source": "alpaca_rest",
+            "cache_hit": daily_hit and minute_hit,
         }
-    except ValueError as e:
-        raise HTTPException(
-            status_code=422,
-            detail={"error": "insufficient_data", "message": str(e)},
-        ) from e
-
-    verdict = evaluate(
-        last_close=indicators_map["last_close"],
-        sma_20=indicators_map["sma_20"],
-        sma_50=indicators_map["sma_50"],
-        rsi_14=indicators_map["rsi_14"],
-        last_volume=indicators_map["last_volume"],
-        avg_volume_20=indicators_map["avg_volume_20"],
-    )
-
-    return {
-        "symbol": symbol,
-        "as_of": datetime.now(tz=UTC).isoformat().replace("+00:00", "Z"),
-        "indicators": indicators_map,
-        "signal": verdict.signal.value,
-        "rules_passed": verdict.rules_passed,
-        "data_source": "alpaca_rest",
-        "cache_hit": daily_hit and minute_hit,
-    }
