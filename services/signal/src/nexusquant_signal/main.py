@@ -14,14 +14,16 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
 from alpaca.data.historical import StockHistoricalDataClient
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.responses import Response
+from psycopg_pool import AsyncConnectionPool
 
 from nexusquant_signal import alpaca_service, metrics
 from nexusquant_signal.alpaca_clients import historical_data_client
 from nexusquant_signal.alpaca_logger import get_alpaca_logger
 from nexusquant_signal.cache import BarsCache, BarsCacheKey, ttl_for
-from nexusquant_signal.config import AlpacaSettings, settings
+from nexusquant_signal.config import AlpacaSettings, PostgresSettings, settings
+from nexusquant_signal.db import persist_signal_or_log
 from nexusquant_signal.indicators import (
     avg_volume,
     last_close,
@@ -40,12 +42,26 @@ from nexusquant_signal.universe import is_in_universe
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # pydantic-settings reads required fields from env; mypy can't see that.
     alpaca_settings = AlpacaSettings()  # type: ignore[call-arg]
+    postgres_settings = PostgresSettings()
     app.state.alpaca_settings = alpaca_settings
+    app.state.postgres_settings = postgres_settings
     app.state.alpaca_client = historical_data_client(alpaca_settings)
     app.state.bars_cache = BarsCache()
     app.state.rate_limiter = SlidingWindowRateLimiter()
     app.state.alpaca_logger = get_alpaca_logger(settings.service_name)
-    yield
+    # open=False: pool connects lazily on first use so a missing/unreachable
+    # DB doesn't crash startup. Writes are fire-and-forget and tolerate
+    # failure (signal_db_write_failures_total).
+    app.state.db_pool = AsyncConnectionPool(
+        conninfo=postgres_settings.dsn,
+        open=False,
+        min_size=0,
+        max_size=5,
+    )
+    try:
+        yield
+    finally:
+        await app.state.db_pool.close()
 
 
 app = FastAPI(title=settings.service_name, lifespan=lifespan)
@@ -68,6 +84,10 @@ def get_rate_limiter(request: Request) -> SlidingWindowRateLimiter:
 
 def get_alpaca_logger_dep(request: Request) -> logging.Logger:
     return request.app.state.alpaca_logger  # type: ignore[no-any-return]
+
+
+def get_db_pool(request: Request) -> AsyncConnectionPool:
+    return request.app.state.db_pool  # type: ignore[no-any-return]
 
 
 # --- Endpoints ---
@@ -127,10 +147,12 @@ async def _cached_fetch(
 @app.get("/signal/{symbol}")
 async def get_signal(
     symbol: str,
+    background_tasks: BackgroundTasks,
     cache: Annotated[BarsCache, Depends(get_cache)],
     client: Annotated[StockHistoricalDataClient, Depends(get_alpaca_client)],
     limiter: Annotated[SlidingWindowRateLimiter, Depends(get_rate_limiter)],
     alpaca_log: Annotated[logging.Logger, Depends(get_alpaca_logger_dep)],
+    db_pool: Annotated[AsyncConnectionPool, Depends(get_db_pool)],
 ) -> dict[str, Any]:
     if not is_in_universe(symbol):
         raise HTTPException(
@@ -179,9 +201,20 @@ async def get_signal(
 
         metrics.signals_computed_total.labels(symbol=symbol, signal=verdict.signal.value).inc()
 
+        as_of = datetime.now(tz=UTC)
+        background_tasks.add_task(
+            persist_signal_or_log,
+            db_pool,
+            symbol,
+            as_of,
+            indicators_map,
+            verdict.signal.value,
+            alpaca_log,
+        )
+
         return {
             "symbol": symbol,
-            "as_of": datetime.now(tz=UTC).isoformat().replace("+00:00", "Z"),
+            "as_of": as_of.isoformat().replace("+00:00", "Z"),
             "indicators": indicators_map,
             "signal": verdict.signal.value,
             "rules_passed": verdict.rules_passed,

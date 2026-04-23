@@ -1,17 +1,19 @@
-"""Shared Alpaca stub + client fixture for endpoint-level tests."""
+"""Shared Alpaca + DB pool stubs + client fixture for endpoint-level tests."""
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-from dataclasses import dataclass
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
 from fastapi.testclient import TestClient
 from nexusquant_signal.cache import BarsCache
-from nexusquant_signal.main import app, get_alpaca_client
+from nexusquant_signal.main import app, get_alpaca_client, get_db_pool
 
 
 @dataclass
@@ -80,14 +82,47 @@ def _flat_minute(n: int) -> list[FakeBar]:
     ]
 
 
+@dataclass
+class StubDbPool:
+    """Duck-typed replacement for AsyncConnectionPool.
+
+    Records each execute(sql, params) call. Set fail=True to simulate a
+    DB outage -- the persistence task must catch and log, response must
+    still be 200.
+    """
+
+    executes: list[tuple[str, tuple[Any, ...]]] = field(default_factory=list)
+    fail: bool = False
+
+    @asynccontextmanager
+    async def connection(self) -> AsyncIterator[_StubConn]:
+        yield _StubConn(self)
+
+
+class _StubConn:
+    def __init__(self, pool: StubDbPool) -> None:
+        self.pool = pool
+
+    async def execute(self, sql: str, params: tuple[Any, ...]) -> None:
+        if self.pool.fail:
+            raise RuntimeError("stub DB failure")
+        self.pool.executes.append((sql, params))
+
+
 @pytest.fixture
 def stub_client() -> StubHistoricalClient:
     return StubHistoricalClient()
 
 
 @pytest.fixture
-def client(stub_client: StubHistoricalClient) -> Iterator[TestClient]:
+def stub_db_pool() -> StubDbPool:
+    return StubDbPool()
+
+
+@pytest.fixture
+def client(stub_client: StubHistoricalClient, stub_db_pool: StubDbPool) -> Iterator[TestClient]:
     app.dependency_overrides[get_alpaca_client] = lambda: stub_client
+    app.dependency_overrides[get_db_pool] = lambda: stub_db_pool
     with TestClient(app) as c:
         c.app.state.bars_cache = BarsCache()
         yield c

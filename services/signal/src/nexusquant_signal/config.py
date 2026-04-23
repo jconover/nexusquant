@@ -53,4 +53,22 @@ class AlpacaSettings(BaseSettings):
         return v
 
 
+class PostgresSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="POSTGRES_",
+        env_file=".env",
+        extra="ignore",
+    )
+
+    host: str = "postgres"
+    port: int = 5432
+    user: str = "nexusquant"
+    password: str = "nexusquant"
+    db: str = "nexusquant"
+
+    @property
+    def dsn(self) -> str:
+        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.db}"
+
+
 settings = Settings()
