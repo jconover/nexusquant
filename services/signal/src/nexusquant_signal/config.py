@@ -46,7 +46,7 @@ class AlpacaSettings(BaseSettings):
     @field_validator("base_url")
     @classmethod
     def must_be_paper_url(cls, v: str) -> str:
-        if v.startswith("https://api.alpaca.markets"):
+        if v.startswith("https://api.alpaca.markets"):  # paper-check: allow
             raise ValueError("Live trading URL is banned in this codebase.")
         if "paper-api.alpaca.markets" not in v:
             raise ValueError(f"ALPACA_BASE_URL must point to paper-api.alpaca.markets, got: {v}")

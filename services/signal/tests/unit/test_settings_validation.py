@@ -58,7 +58,7 @@ def test_live_base_url_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
         ALPACA_API_KEY_ID="k",
         ALPACA_API_SECRET_KEY="s",
         ALPACA_PAPER="true",
-        ALPACA_BASE_URL="https://api.alpaca.markets",
+        ALPACA_BASE_URL="https://api.alpaca.markets",  # paper-check: allow
     )
     with pytest.raises(ValidationError, match=r"[Ll]ive trading URL"):
         AlpacaSettings(_env_file=None)  # type: ignore[call-arg]
