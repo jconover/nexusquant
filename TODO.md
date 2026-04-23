@@ -7,6 +7,11 @@ if it isn't in `docs/PHASE_0.md`, it goes here under the phase that owns it.
 
 - Add foreign keys from `decisions.proposal_id` and `orders.proposal_id` to
   `proposals.proposal_id` once service write paths are wired.
+- Drift correction: `docs/PHASE_1.md` originally referenced
+  `services/signal/src/signal/*.py` paths. Phase 0 established
+  `nexusquant_signal` as the package name (bare `signal` shadows the stdlib
+  module and breaks uvicorn SIGTERM handling + pytest). Paths in PHASE_1.md
+  were corrected in-place to match. No code impact.
 
 ## Phase 2
 
@@ -18,6 +23,11 @@ if it isn't in `docs/PHASE_0.md`, it goes here under the phase that owns it.
 ## Phase 3
 
 ## Phase 4
+
+- Evaluate polars for the universe scanner (batch EOD-bar feature
+  engineering across thousands of symbols on orion). Phase 1 uses pure
+  Python inside the signal service because the data volume is trivial
+  (100 daily bars x 4 symbols); universe scanning is a different regime.
 
 ## Phase 5
 
