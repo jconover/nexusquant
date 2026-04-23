@@ -21,6 +21,20 @@ Three bullets per the definition-of-done in `docs/PHASE_1.md`.
   switch to `BackgroundTasks` made the DB-persistence tests clean:
   `TestClient.get(...).json()` returns *after* the background task has
   already run, so assertions on DB side-effects are deterministic.
+- **The compose-to-cluster Postgres gap only showed up at deploy
+  time.** The local stack has Postgres (docker-compose spec), and
+  `services/signal/src/nexusquant_signal/config.py` defaults
+  `POSTGRES_HOST=postgres` for compose DNS. The Helm `values.yaml`
+  defaults to `postgres.nexusquant.svc.cluster.local` — but nothing
+  in Phase 1 actually deploys a Postgres to that address in-cluster.
+  Because writes are fire-and-forget, the pod goes ready and
+  `/signal/AAPL` returns correct responses; the only signal that
+  something's wrong is `signal_db_write_failures_total` climbing on
+  `/metrics`. Promoted this into a Phase-2 blocker: deploy in-cluster
+  Postgres (TimescaleDB) alongside the risk/executor work, since
+  executor is the first service that actually needs audit writes to
+  succeed. This is a good example of why fire-and-forget isn't free —
+  it trades "loud at boot" for "silent until you check the metric."
 
 ## What I'd do differently
 

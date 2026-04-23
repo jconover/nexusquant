@@ -22,6 +22,21 @@ if it isn't in `docs/PHASE_0.md`, it goes here under the phase that owns it.
 - Promote `nexusquant_signal.alpaca_clients`, `.alpaca_logger`, and
   `.rate_limiter` to a shared library when the executor service needs
   them. Phase 1 lands them per-service to avoid premature abstraction.
+- Deploy in-cluster Postgres (TimescaleDB) in the `nexusquant` namespace
+  at `postgres.nexusquant.svc.cluster.local:5432`, with init SQL from
+  `infra/postgres/init/` applied on first boot. Phase 1 signal service
+  assumes this host but runs standalone because fire-and-forget writes
+  tolerate the connection failure; `signal_db_write_failures_total`
+  climbs until this lands. Executor is the first service that actually
+  needs audit writes to succeed, so this blocks Phase 2.
+- Migrate Alpaca + Postgres credentials to sealed-secrets end to end.
+  The Helm chart already supports this via `createSecret=false`; what's
+  missing is (a) installing the sealed-secrets controller, (b) writing
+  `SealedSecret` manifests for the `signal-alpaca` / `signal-postgres`
+  Secrets the chart expects, and (c) doing the same for the risk +
+  executor secrets as those services land. The one-off `--set-file`
+  pattern used in Phase 1 doesn't scale once there are three services
+  each with their own credentials.
 
 ## Phase 3
 
@@ -39,3 +54,17 @@ if it isn't in `docs/PHASE_0.md`, it goes here under the phase that owns it.
 - Hermes agent integration (LLM decisions via MCP).
 
 ## Phase 7
+
+---
+
+## Maintenance / cross-cutting
+
+Not tied to a specific phase; environment hygiene that can land any time.
+
+- Bump GitHub Actions off Node 20. `actions/checkout@v4`,
+  `astral-sh/setup-uv@v4`, `azure/setup-helm@v4`, and the full
+  `docker/*` set (`login-action@v3`, `setup-buildx-action@v3`,
+  `metadata-action@v5`, `build-push-action@v6`) all emit Node-20
+  deprecation warnings in CI. GitHub forces Node 24 starting 2026-06-02
+  and removes Node 20 on 2026-09-16. Update to whichever major is
+  current when picked up; test against the matrix.
