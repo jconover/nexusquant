@@ -57,14 +57,27 @@ if it isn't in `docs/PHASE_0.md`, it goes here under the phase that owns it.
 
 ---
 
+## Repo boundary
+
+Backtesting is **not** in this repo. It lives in europa-quant
+(github.com/jconover/europa-quant), which answers whether a strategy
+survives realistic costs and out-of-sample testing. This repo answers
+whether an agent can be given bounded authority safely. See
+`docs/decisions/0001-backtesting-in-europa-quant.md` for the boundary and
+the reasoning.
+
+If a future phase needs in-repo backtesting — validating an equities
+signal on Alpaca bars, say — that reverses ADR 0001 and needs a new ADR,
+not a quiet re-addition.
+
+---
+
 ## Maintenance / cross-cutting
 
 Not tied to a specific phase; environment hygiene that can land any time.
 
-- Bump GitHub Actions off Node 20. `actions/checkout@v4`,
-  `astral-sh/setup-uv@v4`, `azure/setup-helm@v4`, and the full
-  `docker/*` set (`login-action@v3`, `setup-buildx-action@v3`,
-  `metadata-action@v5`, `build-push-action@v6`) all emit Node-20
-  deprecation warnings in CI. GitHub forces Node 24 starting 2026-06-02
-  and removes Node 20 on 2026-09-16. Update to whichever major is
-  current when picked up; test against the matrix.
+- ~~Bump GitHub Actions off Node 20.~~ **Done 2026-08-18.** All actions
+  moved to their current major, each defaulting to Node 24:
+  `checkout@v5`, `setup-uv@v10.0.1` (full pin — major-only tags are no
+  longer published), `setup-helm@v5`, `login-action@v4`,
+  `setup-buildx-action@v4`, `metadata-action@v6`, `build-push-action@v7`.
