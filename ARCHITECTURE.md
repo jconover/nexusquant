@@ -47,7 +47,7 @@ own `PHASE_N.md`.
 │ Nightly universe scan  │─────▶│ MinIO: candidates.parquet          │
 │ Ollama enrichment API  │◀─────│ Signal service calls for sentiment │
 │ Jupyter (research)     │      │ WebSocket ingester                 │
-│ Backtester (batch)     │      │ Signal service (rolling indicators)│
+│                        │      │ Signal service (rolling indicators)│
 └────────────────────────┘      │ Risk service                       │
                                 │ Order executor (Alpaca paper)      │
                                 │ MCP server (tool surface)          │
@@ -67,9 +67,11 @@ own `PHASE_N.md`.
 ## Workload split rationale
 
 - **orion** is used where *iteration volume* or *model size* matters:
-  backtesting, feature engineering, universe scoring across thousands of
-  symbols, local LLM inference for sentiment/summarization. Batch,
-  on-demand. Not required for live trading to continue.
+  feature engineering, universe scoring across thousands of symbols,
+  local LLM inference for sentiment/summarization. Batch, on-demand.
+  Not required for live trading to continue. (Strategy backtesting is
+  out of scope for this repo and lives in europa-quant — see
+  `docs/decisions/0001-backtesting-in-europa-quant.md`.)
 - **OKD** is used where *uptime and uniformity* matter: the live signal
   pipeline, risk enforcement, order execution, audit, observability.
   Everything always-on.
@@ -220,8 +222,7 @@ nexusquant/
 │   ├── mcp/                     # MCP server wrapping the above
 │   └── slack/                   # Block Kit proposal approver
 ├── batch/
-│   ├── universe_scan/           # Runs on orion (nightly)
-│   └── backtester/              # Runs on orion (on-demand)
+│   └── universe_scan/           # Runs on orion (nightly)
 ├── sidecars/
 │   └── ollama_enrichment/       # Runs on orion, called by signal svc
 ├── infra/
